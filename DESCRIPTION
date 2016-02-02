@@ -1,0 +1,8 @@
+Package:  SRS
+Version:  0.04
+Author:   Balasubramanian Narasimhan <naras@stat.Stanford.EDU>
+Maintainer:  Balasubramanian Narasimhan <naras@stat.Stanford.EDU>
+Depends: R (>= 2.5), methods, stats, utils
+Description: Subject Randomization for Clinical Trials
+License:  GPL (>=2)
+Title: Subject Randomization System
