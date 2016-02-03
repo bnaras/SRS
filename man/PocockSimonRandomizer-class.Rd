@@ -101,8 +101,8 @@ showClass("PocockSimonRandomizer")
 expt <- ClinicalExperiment(number.of.factors = 2,
                            number.of.factor.levels = c(2, 2))
 randomizer <- new("PocockSimonRandomizer", expt, as.integer(12345))
-randomizer <- randomize(randomizer, "Subject 1", c("1", "2"))
-randomizer <- randomize(randomizer, "Subject 2", c("2", "1"))
+randomizer <- randomize(randomizer, "Subject 1", c("F1-1", "F2-2"))
+randomizer <- randomize(randomizer, "Subject 2", c("F1-2", "F2-1"))
 randomizer
 
 }

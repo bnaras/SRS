@@ -1,2 +1,0 @@
-# SRS
-Subject Randomization System

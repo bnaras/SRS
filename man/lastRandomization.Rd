@@ -24,7 +24,7 @@ expt <- ClinicalExperiment(number.of.factors = 3,
                            number.of.factor.levels = c(2, 2, 3),
                            number.of.treatments = 3)
 r.obj <- new("PocockSimonRandomizer", expt, as.integer(12345))
-r.obj <- randomize(r.obj, "Subject-001", c("1","2","2"))
+r.obj <- randomize(r.obj, "Subject-001", c("F1-1","F2-2","F3-2"))
 lastRandomization(r.obj)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
