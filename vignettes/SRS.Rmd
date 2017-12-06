@@ -99,8 +99,8 @@ print(expt)
 Now let's create a randomizer that will work for this experiment.
 
 ```{r}
-r.obj <- new("PocockSimonRandomizer", expt, 12345L)
-print(r.obj)
+randomizerObject <- new("PocockSimonRandomizer", expt, 12345L)
+print(randomizerObject)
 ```
 
 Note that we don't have a helper constructor function (for no
@@ -156,21 +156,21 @@ Now, we will run a 10 randomizations and print the results.
 
 ```{r}
 for (i in seq(10))
-  r.obj <- randomize(r.obj, generateId(i),
-                     generateRandomFactors(expt@factor.level.names))
-print(r.obj@tr.assignments)
+    randomizeSubject(randomizerObject) <- list(subject.id = generateId(i),
+                                               factor.values = generateRandomFactors(expt@factor.level.names))
+knitr::kable(tr.assignments(randomizerObject))
 ```
 
 Just in case we are only interested in the last assigned treatment:
 
 ```{r}
-lastRandomization(r.obj)
+lastRandomization(randomizerObject)
 ```
 
 We can also look at the marginal distributions thus:
 
 ```{r}
-print(r.obj@stateTable)
+knitr::kable(stateTable(randomizerObject))
 ```
 
 ---
@@ -187,25 +187,28 @@ Let's move away from the default range function to say the standard
 deviation (`sd`) function.
 
 ```{r}
-r.obj.2 <- new("PocockSimonRandomizer", expt, as.integer(12345),
+randomizerObject.2 <- new("PocockSimonRandomizer", expt, as.integer(12345),
                d.func = sd)
-print(r.obj.2@d.func)
+print(randomizerObject.2@d.func)
 ```
 
 Now let's run that simulation again.
 
 ```{r}
 for (i in seq(10))
-    r.obj.2 <- randomize(r.obj.2, generateId(i),
-                         generateRandomFactors(expt@factor.level.names))
-print(r.obj.2@tr.assignments)
+    randomizeSubject(randomizerObject.2) <- list(subject.id = generateId(i),
+                                                 factor.values = generateRandomFactors(expt@factor.level.names))
 ```
 
 Now print the summaries.
 
 ```{r}
-print(table(r.obj@tr.assignments[, "Treatment"]))
-print(r.obj@stateTable)
+tbl <- table(tr.assignments(randomizerObject.2)$Treatment)
+knitr::kable(do.call(data.frame, as.list(tbl)))
+```
+
+```{r}
+knitr::kable(stateTable(randomizerObject.2))
 ```
 
 ### Weighting factors differently
@@ -216,37 +219,65 @@ factor of 5. We do this by modifying the `g.func`.
 ```{r}
 ## Note: imbalances is a number of factors by number of treatments matrix
 g.func <- function(imbalances) {
-    factor.weights <- c (5, 1, 1)
+    factor.weights <- c (20, 1, 1)
     imbalances %*% factor.weights
 }
 
-r.obj.3 <- new("PocockSimonRandomizer", expt, 12345L,
+randomizerObject.3 <- new("PocockSimonRandomizer", expt, 12345L,
                d.func = sd, g.func = g.func)
-print(r.obj.3@g.func)
+print(randomizerObject.3@g.func)
 ```
 
 Now the simulation.
 
 ```{r}
 for (i in seq(1000))
-    r.obj.3 <- randomize(r.obj.3, generateId(i),
-                         generateRandomFactors(expt@factor.level.names))
+    randomizeSubject(randomizerObject.3) <- list(subject.id = generateId(i),
+                                                 factor.values = generateRandomFactors(expt@factor.level.names))
 ```
 
 Let's look at the distribution of treatments and the marginal
 distribution of factors.
 
+
 ```{r}
-print(table(r.obj.3@tr.assignments[, "Treatment"]))
-print(r.obj.3@stateTable)
+tbl <- table(tr.assignments(randomizerObject.3)$Treatment)
+knitr::kable(do.call(data.frame, as.list(tbl)))
+```
+
+```{r}
+knitr::kable(stateTable(randomizerObject.3))
 ```
 
 ### Unequal treatment assignments
 
-Next, we try a simulation where we require 5:2:1 randomization. To
-really see the effect, we need to change the function that computes
-probabilities for picking each treatment based on the
-randomization. Let's be greedy and use the following:
+Next, we try a simulation where we require 5:2:1 randomization. This
+merely requires setting the treatment ratios.
+
+```{r}
+randomizerObject.4 <- new("PocockSimonRandomizer",
+                          expt,
+                          32871L,
+                          tr.ratios = c(5, 2, 1))
+for (i in seq(1000))
+    randomizeSubject(randomizerObject.4) <- list(subject.id = generateId(i),
+                                                 factor.values = generateRandomFactors(expt@factor.level.names))
+```
+
+
+```{r}
+tbl <- table(tr.assignments(randomizerObject.4)$Treatment)
+knitr::kable(do.call(data.frame, as.list(tbl)))
+```
+
+```{r}
+knitr::kable(stateTable(randomizerObject.4))
+```
+
+To full see the effect that the treatment ratios force, we need to
+change the function that computes probabilities for picking each
+treatment based on the randomization. A greedy one like the one below
+will grease the squeaky wheel:
 
 ```{r}
 p.func.greedy <- function(overallImbalance) {
@@ -262,7 +293,7 @@ p.func.greedy <- function(overallImbalance) {
 Now, a new randomizer.
 
 ```{r}
-r.obj.4 <- new("PocockSimonRandomizer", expt, 12345L,
+randomizerObject.4a <- new("PocockSimonRandomizer", expt, 2212L,
                tr.ratios = c(5, 2, 1), p.func = p.func.greedy)
 ```
 
@@ -270,13 +301,17 @@ A simulation.
 
 ```{r}
 for (i in seq(1000))
-    r.obj.4 <- randomize(r.obj.4, generateId(i),
-                         generateRandomFactors(expt@factor.level.names))
+    randomizeSubject(randomizerObject.4a) <- list(subject.id = generateId(i),
+                                                 factor.values = generateRandomFactors(expt@factor.level.names))
 ```
 
 ```{r}
-print(table(r.obj.4@tr.assignments[, "Treatment"]))
-print(r.obj.4@stateTable)
+tbl <- table(tr.assignments(randomizerObject.4a)$Treatment)
+knitr::kable(do.call(data.frame, as.list(tbl)))
+```
+
+```{r}
+knitr::kable(stateTable(randomizerObject.4a))
 ```
 
 ### A different probability assignment
@@ -302,7 +337,7 @@ p.func.not.so.greedy <- function(overallImbalance) {
 ```
 
 ```{r}
-r.obj.5 <- new("PocockSimonRandomizer", expt, 28923L,
+randomizerObject.5 <- new("PocockSimonRandomizer", expt, 28923L,
                tr.ratios = c(5, 2, 1), p.func = p.func.not.so.greedy)
 ```
 
@@ -310,14 +345,19 @@ Now, a simulation.
 
 ```{r}
 for (i in seq(1000))
-    r.obj.5 <- randomize(r.obj.5, generateId(i),
-                         generateRandomFactors(expt@factor.level.names))
+    randomizeSubject(randomizerObject.5) <- list(subject.id = generateId(i),
+                                                 factor.values = generateRandomFactors(expt@factor.level.names))
+```	
+
+```{r}
+tbl <- table(tr.assignments(randomizerObject.5)$Treatment)
+knitr::kable(do.call(data.frame, as.list(tbl)))
 ```
 
 ```{r}
-print(table(r.obj.5@tr.assignments[, "Treatment"]))
-print(r.obj.5@stateTable)
+knitr::kable(stateTable(randomizerObject.5))
 ```
+
 
 Another possibility for the probability function might be based on the
 actual imbalances.
@@ -336,6 +376,60 @@ arbitrary situations.
 
 ---
 
+## Checking Restarts
+
+I've often has situation where someone has come in the middle of a
+study and asked to do this sort of randomization when they have
+already randomized some subjects by hand or some other means. So, in
+this section, we plan to ensure that the restart process is doing the
+right thing.
+
+We will first generate 25 randomizations.
+```{r}
+rObj <- new("PocockSimonRandomizer", expt, 2213L)
+for (i in seq(25))
+    randomizeSubject(rObj) <- list(subject.id = generateId(i),
+                                   factor.values = generateRandomFactors(expt@factor.level.names))
+```
+
+We now save the state of the randomizer, the assignments, and the
+random number generate state and continue for a few more
+randomizations.
+
+```{r}
+savedAssignments <- tr.assignments(rObj)
+savedState <- stateTable(rObj)
+savedSeed <- .Random.seed
+for (i in seq(50))
+    randomizeSubject(rObj) <- list(subject.id = generateId(i+50),
+                                   factor.values = generateRandomFactors(expt@factor.level.names))
+```
+
+Once again, we save the assignments and state. 
+```{r}
+assignments <- tr.assignments(rObj)
+state <- stateTable(rObj)
+```
+
+If we now restart the randomizer at the state that existed after the
+25 randomizations, and run it forward again, it should produce the
+same set of randomizations for the next 50.
+
+```{r}
+tr.assignments(rObj) <- savedAssignments
+assign(x = ".Random.seed", value = savedSeed, envir = .GlobalEnv)
+for (i in seq(50))
+    randomizeSubject(rObj) <- list(subject.id = generateId(i+50),
+                                   factor.values = generateRandomFactors(expt@factor.level.names))
+```
+
+Let's check that the answers are the same.
+
+```{r}
+identical(stateTable(rObj), state)
+identical(tr.assignments(rObj), assignments)
+```
+
 ## Notes
 
 The current package can be used without recourse to a database for
@@ -352,13 +446,14 @@ the prognostic factors of interest. The randomization is performed
 simply by running the code snippet
 
 ```{r, eval = FALSE}
-r.obj <- randomize(r.obj, id, c(fac1, fac2, fac3))
-lastRandomization(r.obj)
+randomizeSubject(randomizerObject) <- list(subject.id = id,
+                                           factor.values = c(fac1, fac2, fac3))
+lastRandomization(randomizerObject)
 ```
 
-where `r.obj` is a randomizer created as above, and `id`, `fac1`,
-`fac2`, `fac3`, are the study id and the associated factor levels of
-the subject to be randomized.
+where `randomizerObject` is a randomizer created as above, and `id`,
+`fac1`, `fac2`, `fac3`, are the study id and the associated factor
+levels of the subject to be randomized.
 
 After each assignment, the person can save the R workspace so that the
 state is preserved.  If R is invoked from the same directory again,
